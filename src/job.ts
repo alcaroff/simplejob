@@ -104,7 +104,6 @@ class Job {
 
   async simplelogsStart() {
     if (this.simplelogsToken) {
-      console.log(this.simplelogsToken);
       const { data } = await axios.post(
         `${this.simplelogsUrl}/report`,
         {
@@ -234,6 +233,7 @@ class Job {
     console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.text}`);
     this.errors.push(error);
   };
+  error = this.addError;
 
   addLog = (text: string) => {
     const log = {
@@ -243,6 +243,7 @@ class Job {
     console.error(`[${dayjs(log.date).format('mm:hh:ss')}] ${log.text}`);
     this.logs.push(log);
   };
+  log = this.addLog;
 
   removeColors(string: string) {
     return string.replace(/\u001b\[[0-9]+m/g, '');
@@ -379,15 +380,16 @@ class Job {
    */
   start = async (processJob: () => Promise<any>) => {
     try {
-      this.startedAt = dayjs().toISOString();
-      this.startedAtTimestamp = dayjs(this.startedAt).valueOf();
       if (!this.disableConnect) {
         await this.connect();
       }
+      this.startedAt = dayjs().toISOString();
+      this.startedAtTimestamp = dayjs(this.startedAt).valueOf();
+      this.status = JobStatus.RUNNING;
+      this.log('🚀 Job started...');
       await this.simplelogsStart();
 
       // Process job.
-      this.status = JobStatus.RUNNING;
       await processJob();
 
       this.endedAt = dayjs().toISOString();
@@ -402,6 +404,7 @@ class Job {
       if (!this.disableConnect) {
         await this.disconnect();
       }
+      this.log('✅ Job done.');
 
       await this.simplelogsUpdate(true);
     } catch (error: any) {
@@ -409,7 +412,9 @@ class Job {
       this.endedAt = dayjs().toISOString();
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
       this.status = JobStatus.ERROR;
+      this.log('💥 Job crashed.');
       await this.simplelogsUpdate(true);
+      console.log(this.coloredReport);
       if (!this.disableConnect) {
         await this.disconnect();
       }
