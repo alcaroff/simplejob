@@ -226,22 +226,22 @@ class Job {
    * @param message the error string message.
    * @param data the data linked to the error.
    */
-  addError = (message: string, data?: any) => {
+  addError = (text: string, data?: any) => {
     const error = {
       date: new Date().toISOString(),
-      message,
+      text,
       data: data,
     };
-    console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.message}`);
+    console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.text}`);
     this.errors.push(error);
   };
 
-  addLog = (message: string) => {
+  addLog = (text: string) => {
     const log = {
       date: new Date().toISOString(),
-      message,
+      text,
     };
-    console.error(`[${dayjs(log.date).format('mm:hh:ss')}] ${log.message}`);
+    console.error(`[${dayjs(log.date).format('mm:hh:ss')}] ${log.text}`);
     this.logs.push(log);
   };
 
@@ -265,7 +265,7 @@ class Job {
     report = `${reportTheme.separator(undefined, 'Job report')}\n`;
     report += `👷 ${reportTheme.title('Job')} => ${reportTheme.scriptName(this.scriptName)}\n`;
     report += `📁 ${reportTheme.title('Path')} => ${this.scriptPath}\n`;
-    report += `⚙️ ${reportTheme.title('Status')} => ${this.status}\n`;
+    report += `⚙️ ${reportTheme.title('Status')} => ${reportTheme.status(this.status)}\n`;
     if (this.fatalError) {
       report += `💥 Fatal error => ${this.fatalError.message.stack}\n`;
     }
@@ -303,7 +303,7 @@ class Job {
       report += this.errors
         .slice(0, this.reportErrorsLimit)
         .sort()
-        .map((error) => `\t${reportTheme.error(error.message)}`)
+        .map((error) => `\t${reportTheme.error(error.text)}`)
         .join('\n');
       if (this.errors.length - this.reportErrorsLimit > 0) {
         report += `\n\t${reportTheme.error(

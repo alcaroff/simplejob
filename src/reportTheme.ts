@@ -41,6 +41,20 @@ export const duration = (seconds: number | string) => {
   return button(color, `${seconds}s`, true);
 };
 
+export const status = (status: string) => {
+  let color: keyof colors.Color;
+  if (status === 'success') {
+    color = 'green';
+  } else if (status === 'warning') {
+    color = 'yellow';
+  } else if (status === 'error') {
+    color = 'red';
+  } else {
+    color = 'gray';
+  }
+  return button(color, status, true);
+};
+
 export const argValue = (value: any) => {
   const color = 'yellow';
   if (typeof value === 'string' && value.length > 20) {

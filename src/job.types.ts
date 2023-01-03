@@ -35,8 +35,8 @@ export type ForkArgs = {
   onChildReturn?: (data: any, message: any) => any;
 };
 
-export type JobError = { date: string; message: string; data: any };
-export type JobLog = { date: string; message: string };
+export type JobError = { date: string; text: string; data?: any };
+export type JobLog = { date: string; text: string };
 
 export enum JobStatus {
   PENDING = 'pending',
