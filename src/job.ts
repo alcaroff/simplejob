@@ -41,6 +41,7 @@ class Job {
   result: JobResult = {};
   errors: JobError[] = [];
   logs: JobLog[] = [];
+  fatalError?: JobError;
 
   // Simplelogs.
   simplelogsToken?: string;
@@ -55,8 +56,6 @@ class Job {
   // Report.
   report?: string;
   coloredReport?: string;
-
-  fatalError?: any;
 
   /** Arguments of getArgs call stored for usage print. */
   private _argsDetails: JobArgsDetails = {
@@ -266,9 +265,6 @@ class Job {
     report += `👷 ${reportTheme.title('Job')} => ${reportTheme.scriptName(this.scriptName)}\n`;
     report += `📁 ${reportTheme.title('Path')} => ${this.scriptPath}\n`;
     report += `⚙️ ${reportTheme.title('Status')} => ${reportTheme.status(this.status)}\n`;
-    if (this.fatalError) {
-      report += `💥 Fatal error => ${this.fatalError.message.stack}\n`;
-    }
 
     const durationSeconds = (this.endedAtTimestamp! - +this.startedAtTimestamp!) / 1000;
     report += `⏰ ${reportTheme.title('Duration')} => ${reportTheme.duration(durationSeconds)}\n`;
@@ -408,8 +404,8 @@ class Job {
       }
 
       await this.simplelogsUpdate(true);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      this.addError(error.stack);
       this.endedAt = dayjs().toISOString();
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
       this.status = JobStatus.ERROR;
