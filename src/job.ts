@@ -92,7 +92,7 @@ class Job {
   }) {
     this.maintainer = maintainer;
     this.description = description;
-    this.scriptName = fileName.split('/').reverse()[0];
+    this.scriptName = fileName.split('/').reverse()[0].split('.')[0];
     this.scriptPath = fileName;
     this.categories = categories;
     this.disableReport = disableReport;
