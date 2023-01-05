@@ -20,7 +20,7 @@ import {
 } from './job.types';
 import dayjs from 'dayjs';
 
-class Job {
+class SimpleJob {
   reportId?: string;
   maintainer?: string;
   description?: string;
@@ -644,4 +644,4 @@ class Job {
   };
 }
 
-export default Job;
+export default SimpleJob;
