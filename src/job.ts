@@ -240,7 +240,7 @@ class SimpleJob {
       date: new Date().toISOString(),
       text,
     };
-    console.error(`[${dayjs(log.date).format('mm:hh:ss')}] ${log.text}`);
+    console.error(`[${dayjs(log.date).format('hh:mm:ss')}] ${log.text}`);
     this.logs.push(log);
   };
   log = this.addLog;
