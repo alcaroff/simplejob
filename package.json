@@ -1,5 +1,5 @@
 {
-  "name": "simple-job",
+  "name": "simplelogs",
   "version": "1.0.5",
   "main": "lib/job.js",
   "types": "lib/job.d.ts",
