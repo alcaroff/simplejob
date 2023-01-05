@@ -1,6 +1,6 @@
 {
-  "name": "simplelogs-job",
-  "version": "1.0.3",
+  "name": "simple-job",
+  "version": "1.0.4",
   "main": "lib/job.js",
   "types": "lib/job.d.ts",
   "author": "alcaroff",
