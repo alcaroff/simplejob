@@ -122,7 +122,7 @@ class Job {
         },
         {
           headers: {
-            Authorization: `Bearer ${this.simplelogsToken}`,
+            Authorization: this.simplelogsToken,
           },
         }
       );
@@ -144,7 +144,7 @@ class Job {
         },
         {
           headers: {
-            Authorization: `Bearer ${this.simplelogsToken}`,
+            Authorization: this.simplelogsToken,
           },
         }
       );
