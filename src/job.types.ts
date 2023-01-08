@@ -38,12 +38,24 @@ export type ForkArgs = {
 export type JobError = { date: string; text: string; data?: any };
 export type JobLog = { date: string; text: string };
 
+export type JobOptions = {
+  maintainer?: string;
+  fileName: string;
+  childPath?: string;
+  categories?: string[];
+  disableReport?: boolean;
+  confirmMessage?: string;
+  disableConnect?: boolean;
+  description?: string;
+  onCrash?: () => Promise<any>;
+  onDone?: () => Promise<any>;
+};
 export enum JobStatus {
   PENDING = 'pending',
   RUNNING = 'running',
   SUCCESS = 'success',
   WARNING = 'warning',
-  ERROR = 'error',
+  CRASH = 'crash',
 }
 
 export enum JobParentCode {

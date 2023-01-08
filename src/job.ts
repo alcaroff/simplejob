@@ -17,6 +17,7 @@ import {
   ForkArgs,
   ForkOptions,
   JobStatus,
+  JobOptions,
 } from './job.types';
 import dayjs from 'dayjs';
 
@@ -69,7 +70,12 @@ class SimpleJob {
   itemsOffset = 0;
   disableReport?: boolean;
   disableConnect?: boolean;
+
   private _interval?: NodeJS.Timer;
+
+  // Functions.
+  onCrash?: () => Promise<any>;
+  onDone?: () => Promise<any>;
 
   constructor({
     maintainer,
@@ -79,16 +85,9 @@ class SimpleJob {
     confirmMessage,
     disableReport,
     disableConnect,
-  }: {
-    maintainer?: string;
-    fileName: string;
-    childPath?: string;
-    categories?: string[];
-    disableReport?: boolean;
-    confirmMessage?: string;
-    disableConnect?: boolean;
-    description?: string;
-  }) {
+    onDone,
+    onCrash,
+  }: JobOptions) {
     this.maintainer = maintainer;
     this.description = description;
     this.scriptName = fileName.split('/').reverse()[0].split('.')[0];
@@ -99,6 +98,8 @@ class SimpleJob {
     if (confirmMessage) {
       this.confirmMessage = confirmMessage;
     }
+    this.onCrash = onCrash;
+    this.onDone = onDone;
     this.args = {};
   }
 
@@ -405,16 +406,19 @@ class SimpleJob {
         await this.disconnect();
       }
       this.log('✅ Job done.');
+      if (this.onDone) await this.onDone();
 
       await this.simplelogsUpdate(true);
     } catch (error: any) {
       this.addError(error.stack);
       this.endedAt = dayjs().toISOString();
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
-      this.status = JobStatus.ERROR;
+      this.status = JobStatus.CRASH;
       this.log('💥 Job crashed.');
       await this.simplelogsUpdate(true);
+      this.generateReport();
       console.log(this.coloredReport);
+      if (this.onCrash) await this.onCrash();
       if (!this.disableConnect) {
         await this.disconnect();
       }
