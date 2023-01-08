@@ -47,7 +47,7 @@ export const status = (status: string) => {
     color = 'green';
   } else if (status === 'warning') {
     color = 'yellow';
-  } else if (status === 'error') {
+  } else if (status === 'crash') {
     color = 'red';
   } else {
     color = 'gray';
