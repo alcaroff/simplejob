@@ -35,8 +35,12 @@ export type ForkArgs = {
   onChildReturn?: (data: any, message: any) => any;
 };
 
-export type JobError = { date: string; text: string; data?: any };
-export type JobLog = { date: string; text: string };
+export type JobLog = {
+  date: string;
+  message: string;
+  type: 'error' | 'log';
+  data?: string;
+};
 
 export type JobOptions = {
   maintainer?: string;
@@ -47,6 +51,9 @@ export type JobOptions = {
   confirmMessage?: string;
   disableConnect?: boolean;
   description?: string;
+  tags?: string[];
+  thread?: string;
+
   onCrash?: () => Promise<any>;
   onDone?: () => Promise<any>;
 };

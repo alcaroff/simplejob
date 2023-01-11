@@ -12,7 +12,6 @@ import {
   JobArgsDetails,
   JobChildCode,
   JobParentCode,
-  JobError,
   JobLog,
   ForkArgs,
   ForkOptions,
@@ -40,9 +39,7 @@ class SimpleJob {
 
   // Data.
   result: JobResult = {};
-  errors: JobError[] = [];
   logs: JobLog[] = [];
-  fatalError?: JobError;
 
   // Simplelogs.
   simplelogsToken?: string;
@@ -54,9 +51,16 @@ class SimpleJob {
   endedAt?: string;
   endedAtTimestamp?: number;
 
-  // Report.
-  report?: string;
-  coloredReport?: string;
+  // Reports.
+  get report(): string {
+    return this._generateReport();
+  }
+  get coloredReport(): string {
+    return this._generateColoredReport();
+  }
+
+  tags: string[] = [];
+  thread?: string;
 
   /** Arguments of getArgs call stored for usage print. */
   private _argsDetails: JobArgsDetails = {
@@ -87,6 +91,8 @@ class SimpleJob {
     disableConnect,
     onDone,
     onCrash,
+    tags,
+    thread,
   }: JobOptions) {
     this.maintainer = maintainer;
     this.description = description;
@@ -100,55 +106,69 @@ class SimpleJob {
     }
     this.onCrash = onCrash;
     this.onDone = onDone;
+    if (tags) {
+      this.tags = [...this.tags, ...tags];
+    }
+    this.thread = thread;
     this.args = {};
+  }
+
+  getErrors(): JobLog[] {
+    return this.logs.filter((log) => log.type === 'error') as JobLog[];
   }
 
   async simplelogsStart() {
     if (this.simplelogsToken) {
-      const { data } = await axios.post(
-        `${this.simplelogsUrl}/report`,
-        {
-          name: this.scriptName,
-          path: this.scriptPath,
-          args: this.args,
+      try {
+        const { data } = await axios.post(
+          `${this.simplelogsUrl}/report`,
+          {
+            name: this.scriptName,
+            path: this.scriptPath,
+            args: this.args,
 
-          env: process.env.NODE_ENV,
-          status: this.status,
+            env: process.env.NODE_ENV,
+            status: this.status,
 
-          startedAt: this.startedAt,
-          standardLogs: this.logs,
-          errorLogs: this.errors,
-
-          parent: this.parentId,
-        },
-        {
-          headers: {
-            Authorization: this.simplelogsToken,
+            startedAt: this.startedAt,
+            logs: this.logs,
+            tags: this.tags,
+            thread: this.thread,
           },
-        }
-      );
-      this.reportId = data._id;
-      this._interval = setInterval(async () => await this.simplelogsUpdate(), 5000);
+          {
+            headers: {
+              Authorization: this.simplelogsToken,
+            },
+          }
+        );
+        this.reportId = data._id;
+        this._interval = setInterval(async () => await this.simplelogsUpdate(), 2000);
+      } catch (error: any) {
+        this.addError(`simplelogs api start request failed`, error.response);
+      }
     }
   }
 
   async simplelogsUpdate(lastUpdate = false) {
     if (this.simplelogsToken && this.reportId) {
-      await axios.patch(
-        `${this.simplelogsUrl}/report/${this.reportId}`,
-        {
-          startedAt: this.startedAt,
-          reportLog: this.generateReport(),
-          standardLogs: this.logs,
-          errorLogs: this.errors,
-          status: this.status,
-        },
-        {
-          headers: {
-            Authorization: this.simplelogsToken,
+      try {
+        await axios.patch(
+          `${this.simplelogsUrl}/report/${this.reportId}`,
+          {
+            startedAt: this.startedAt,
+            report: this.report,
+            logs: this.logs,
+            status: this.status,
           },
-        }
-      );
+          {
+            headers: {
+              Authorization: this.simplelogsToken,
+            },
+          }
+        );
+      } catch (error: any) {
+        this.addError(`simplelogs api update request failed`, error.response);
+      }
     }
     if (lastUpdate) {
       clearInterval(this._interval);
@@ -226,22 +246,25 @@ class SimpleJob {
    * @param data the data linked to the error.
    */
   addError = (text: string, data?: any) => {
-    const error = {
+    const error: JobLog = {
+      type: 'error',
       date: new Date().toISOString(),
-      text,
-      data: data,
+      message: text,
+      data,
     };
-    console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.text}`);
-    this.errors.push(error);
+    console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.message}`);
+    this.logs.push(error);
   };
   error = this.addError;
 
-  addLog = (text: string) => {
-    const log = {
+  addLog = (text: string, data?: any) => {
+    const log: JobLog = {
+      type: 'log',
       date: new Date().toISOString(),
-      text,
+      message: text,
+      data,
     };
-    console.error(`[${dayjs(log.date).format('hh:mm:ss')}] ${log.text}`);
+    console.error(`[${dayjs(log.date).format('hh:mm:ss')}] ${log.message}`);
     this.logs.push(log);
   };
   log = this.addLog;
@@ -260,7 +283,7 @@ class SimpleJob {
   /**
    * Called at the end of the job if its ran successfully.
    */
-  generateReport = () => {
+  private _generateColoredReport = () => {
     let report = '';
     // Regular report.
     report = `${reportTheme.separator(undefined, 'Job report')}\n`;
@@ -296,16 +319,19 @@ class SimpleJob {
     }
 
     // Errors.
-    if (this.errors.length) {
+    const errors = this.getErrors();
+    if (errors.length) {
       report += `🚩 ${reportTheme.title('Errors')} =>\n`;
-      report += this.errors
+      report += errors
         .slice(0, this.reportErrorsLimit)
         .sort()
-        .map((error) => `\t${reportTheme.error(error.text)}`)
+        .map((error) => `\t${reportTheme.error(error.message)}`)
         .join('\n');
-      if (this.errors.length - this.reportErrorsLimit > 0) {
+      if (this.logs.filter((x) => x.type === 'error').length - this.reportErrorsLimit > 0) {
         report += `\n\t${reportTheme.error(
-          `(...${this.errors.length - this.reportErrorsLimit} more errors)`
+          `(...${
+            this.logs.filter((x) => x.type === 'error').length - this.reportErrorsLimit
+          } more errors)`
         )}`;
       }
       report += '\n';
@@ -317,10 +343,12 @@ class SimpleJob {
       report += reportTheme.confirmMessage(this.confirmMessage);
     }
 
-    this.coloredReport = report;
-    this.report = this.removeColors(report);
+    return report;
+  };
 
-    return this.report;
+  private _generateReport = () => {
+    const coloredReport = this._generateColoredReport();
+    return this.removeColors(coloredReport);
   };
 
   /**
@@ -395,10 +423,9 @@ class SimpleJob {
 
       this.endedAt = dayjs().toISOString();
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
-      this.status = this.errors.length ? JobStatus.WARNING : JobStatus.SUCCESS;
+      this.status = this.getErrors().length ? JobStatus.WARNING : JobStatus.SUCCESS;
 
       if (!this.disableReport) {
-        this.generateReport();
         console.log(this.coloredReport);
       }
 
@@ -416,7 +443,6 @@ class SimpleJob {
       this.status = JobStatus.CRASH;
       this.log('💥 Job crashed.');
       await this.simplelogsUpdate(true);
-      this.generateReport();
       console.log(this.coloredReport);
       if (this.onCrash) await this.onCrash();
       if (!this.disableConnect) {
@@ -523,13 +549,7 @@ class SimpleJob {
 
       childProcess.on(
         'message',
-        async (message: {
-          code: JobChildCode;
-          result: JobResult;
-          errors: JobError[];
-          logs: JobLog[];
-          data: any;
-        }) => {
+        async (message: { code: JobChildCode; result: JobResult; logs: JobLog[]; data: any }) => {
           if (message.code === JobChildCode.READY) {
             childProcess.send({
               code: JobParentCode.INIT,
@@ -615,20 +635,9 @@ class SimpleJob {
     return result;
   };
 
-  addStatsFromChild = ({
-    result,
-    errors,
-    logs,
-  }: {
-    result: JobResult;
-    errors: any[];
-    logs: any[];
-  }) => {
+  addStatsFromChild = ({ result, logs }: { result: JobResult; logs: JobLog[] }) => {
     if (result) {
       this.mergeResult(this.result, result);
-    }
-    if (errors) {
-      this.errors.push(...errors);
     }
     if (logs) {
       this.logs.push(...logs);
@@ -637,13 +646,11 @@ class SimpleJob {
 
   createStatsObject = () => ({
     result: this.result,
-    errors: this.errors,
     logs: this.logs,
   });
 
   resetStatsObject = () => {
     this.result = {};
-    this.errors = [];
     this.logs = [];
   };
 }
