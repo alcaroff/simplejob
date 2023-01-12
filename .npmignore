@@ -1,1 +1,7 @@
+src
 .env
+.eslintrc
+.gitignore
+.nvmrc
+jest.config.js
+tsconfig.json
