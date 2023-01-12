@@ -17,7 +17,7 @@ A tool class to wrap your jobs/scripts and easily get reports like 👇
 +----------------------------------------------------------+
 ```
 
-## Get started
+## Installaton
 
 ```sh
 yarn add simplejob
@@ -36,6 +36,8 @@ class MyJob extends SimpleJob {
   }
 }
 ```
+
+## Usage
 
 ### Create your job
 
@@ -62,7 +64,7 @@ job.addLog(`${user.id} migrated`);
 
 ### Getting args
 
-`getArgs` is a method that helps you getting args params, logging errors and usage using Joi.
+`getArgs` helps you getting args params, logging errors and usage using Joi.
 
 ```ts
 const args = job.getArgs<{
@@ -88,12 +90,12 @@ invalid param: "country"
 usage: "node myjob [language] <city> <--confirm>"
 ```
 
-### API
+> 💡 Note: for now, compatible Joi package is "17.4.0"
+
+## API
 
 🚧 Still in construction...
 
 | property | description | type | default |
 | -------- | ----------- | ---- | ------- |
-|          |             |      |         |
-|          |             |      |         |
 |          |             |      |         |
