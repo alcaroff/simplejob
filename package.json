@@ -5,6 +5,10 @@
   "types": "lib/job.d.ts",
   "author": "alcaroff",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/alcaroff/simplejob"
+  },
   "private": false,
   "scripts": {
     "prepublish": "tsc",
