@@ -3,21 +3,21 @@
 A tool class to wrap your jobs/scripts and easily get logs and reports like 👇
 
 ```
-[11:09:09] 🚀 Job started...
-[11:09:09] Error on user [42]
-[11:09:09] Error while fetching date
-[11:09:09] ✅ Job done.
+[12:11:49] 🚀 Job started...
+[12:11:49] Error on user [42]
+[12:11:49] Error while fetching date
+[12:11:49] ✅ Job done.
 +------------------- Job report ---------------------+
-👷 Job =>  testJob
-📁 Path => /Users/alex/Documents/src/testJob.ts
-⚙️ Status =>  warning
-⏰ Duration =>  0.002s
-💬 Args =>
+👷 Job >  testJob
+📁 Path > /Users/alex/Documents/perso/simplelogs-package/src/testJob.ts
+🚦 Status >  warning
+⏰ Duration >  0.004s
+💬 Args >
         - startDate: "2021-10-10"
         - endDate: "2023-10-10"
-📊 Results =>
+📊 Results >
         - notificationSent: 42
-🚩 Errors =>
+🚩 Errors >
         - Error on user [42]
         - Error while fetching date
 +------------------------------------------------------+
@@ -105,6 +105,22 @@ Usage: "node myjob [language] <city> <--confirm>"
 
 🚧 Still in construction...
 
-| property | description | type | default |
-| -------- | ----------- | ---- | ------- |
-|          |             |      |         |
+### SimpleJob Class api
+
+| property          | description                                   | type                                                      | default              |
+| ----------------- | --------------------------------------------- | --------------------------------------------------------- | -------------------- |
+| timeformat        | Format of time to be displayed in logs        | [dayjs format](https://day.js.org/docs/en/display/format) | 'hh:mm:ss'           |
+| env               | Environment of the job                        | string \| undefined                                       | process.env.NODE_ENV |
+| args              | Arguments of the job                          | object                                                    | {}                   |
+| reportErrorsLimit | Limit of errors to be displayed in the report | number                                                    | 6                    |
+
+### SimpleJob constructor options
+
+Used as `new SimpleJob(options)`
+
+| property       | description                                                        | type                | default |
+| -------------- | ------------------------------------------------------------------ | ------------------- | ------- |
+| maintainer     | Name of the maintainer of the job                                  | string \| undefined |         |
+| filename       | Full path of the file (\_\_filename)                               | string              |         |
+| disableReport  | Disable the report at the end of the job                           | boolean             | false   |
+| disableConnect | Disable the connect/disconnect methods at the start/end of the job | boolean             | false   |

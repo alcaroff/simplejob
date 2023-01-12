@@ -27,6 +27,7 @@ class SimpleJob {
   description?: string;
   scriptName: string;
   scriptPath: string;
+  env = process.env.NODE_ENV;
 
   categories?: string[];
   args: JobArgs;
@@ -82,6 +83,9 @@ class SimpleJob {
   onCrash?: () => Promise<any>;
   onDone?: () => Promise<any>;
 
+  // Other.
+  timeFormat = 'hh:mm:ss';
+
   constructor({
     maintainer,
     description,
@@ -128,7 +132,7 @@ class SimpleJob {
             path: this.scriptPath,
             args: this.args,
 
-            env: process.env.NODE_ENV,
+            env: this.env,
             status: this.status,
 
             startedAt: this.startedAt,
@@ -253,7 +257,7 @@ class SimpleJob {
       message: text,
       data,
     };
-    console.error(`[${dayjs(error.date).format('hh:mm:ss')}] ${error.message}`);
+    console.error(`[${dayjs(error.date).format(this.timeFormat)}] ${error.message}`);
     this.logs.push(error);
   };
   error = this.addError;
@@ -265,7 +269,7 @@ class SimpleJob {
       message: text,
       data,
     };
-    console.error(`[${dayjs(log.date).format('hh:mm:ss')}] ${log.message}`);
+    console.error(`[${dayjs(log.date).format(this.timeFormat)}] ${log.message}`);
     this.logs.push(log);
   };
   log = this.addLog;
@@ -288,22 +292,23 @@ class SimpleJob {
     let report = '';
     // Regular report.
     report = `${reportTheme.separator(undefined, 'Job report')}\n`;
-    report += `👷 Job => ${reportTheme.scriptName(this.scriptName)}\n`;
-    report += `📁 Path => ${this.scriptPath}\n`;
-    report += `⚙️ Status => ${reportTheme.status(this.status)}\n`;
+    report += `👷 Job > ${reportTheme.scriptName(this.scriptName)}\n`;
+    report += `📁 Path > ${this.scriptPath}\n`;
+    if (this.env) report += `💻 Env > ${this.env}\n`;
+    report += `🚦 Status > ${reportTheme.status(this.status)}\n`;
 
     const durationSeconds = (this.endedAtTimestamp! - +this.startedAtTimestamp!) / 1000;
-    report += `⏰ Duration => ${reportTheme.duration(durationSeconds)}\n`;
+    report += `⏰ Duration > ${reportTheme.duration(durationSeconds)}\n`;
 
     // Children.
     if (this.childrenCount > 0) {
-      report += `🤰 Children => ${this.childrenCount}\n`;
+      report += `🤰 Children > ${this.childrenCount}\n`;
     }
 
     // Args.
     const argsEntries = Object.entries(this.args).filter(([, value]) => value !== undefined);
     if (argsEntries.length) {
-      report += `💬 Args =>\n`;
+      report += `💬 Args >\n`;
       report += argsEntries
         .map(([key, value]) => `\t- ${key}: ${reportTheme.value(value)}`)
         .join('\n');
@@ -312,7 +317,7 @@ class SimpleJob {
 
     // Results.
     if (Object.keys(this.result).length > 0) {
-      report += `📊 Results =>\n`;
+      report += `📊 Results >\n`;
       report += Object.entries(this.result)
         .map(([key, value]) => `\t- ${key}: ${reportTheme.value(value)}`)
         .join('\n');
@@ -322,7 +327,7 @@ class SimpleJob {
     // Errors.
     const errors = this.getErrors();
     if (errors.length) {
-      report += `🚩 Errors =>\n`;
+      report += `🚩 Errors >\n`;
       report += errors
         .slice(0, this.reportErrorsLimit)
         .sort()
