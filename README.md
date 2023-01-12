@@ -8,12 +8,16 @@ A tool class to wrap your jobs/scripts and easily get reports like 👇
 📁  PATH  => /Users/alex/Documents/myproject/myjob.js
 ⚙️  STATUS  =>  warning
 ⏰  DURATION  =>  5.128s
-👨‍💻  ENV  =>  prod
+👨‍💻  ENV  => prod
 💬  ARGS  =>
-	startDate:  2023-01-12
-	endDate:  2023-01-14
+	- startDate:  2023-01-12
+	- endDate:  2023-01-14
 📊  RESULTS  =>
-	sentNotifications:  29
+	- sentNotifications:  29
+🚨  ERRORS  =>
+  - Error on user 42
+  - Error on user 10
+  - Error on user 7
 +----------------------------------------------------------+
 ```
 
@@ -26,6 +30,8 @@ npm i -S simplejob
 ```
 
 ```ts
+import SimpleJob from "simplejob";
+
 class MyJob extends SimpleJob {
   async connect() {
     // your database connection
