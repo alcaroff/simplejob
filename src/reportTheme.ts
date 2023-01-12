@@ -1,4 +1,5 @@
 import colors from 'colors';
+import { isArray } from 'lodash';
 
 const button = (
   color: keyof colors.Color,
@@ -12,22 +13,39 @@ export const bold = colors.bold;
 
 export const title = (value: string) => button('cyan', value);
 
-export const separator = (length = 60, text?: string) => {
-  const _separator = Array(length).fill('-').join('');
+export const value = (value: any) => {
+  if (typeof value === 'string') {
+    return colors.yellow(`"${value}"`);
+  } else if (typeof value === 'number') {
+    return colors.blue(`${value}`);
+  } else if (typeof value === 'boolean' && value === false) {
+    return colors.red(`${value}`);
+  } else if (typeof value === 'boolean' && value === true) {
+    return colors.green(`${value}`);
+  } else if (isArray(value)) {
+    return colors.cyan(`[${value.join(', ')}]`);
+  } else {
+    return value;
+  }
+};
+
+export const separator = (length = 54, text?: string) => {
+  let _separator = Array(length).fill('-').join('');
+  _separator = `+${_separator}+`;
 
   if (text) {
     const newTextLength = text.length + 4;
     return `${_separator.substring(
       0,
       Math.floor(length / 2) - Math.floor(newTextLength / 2)
-    )} ${button('magenta', text)} ${_separator.substring(
+    )} ${text} ${_separator.substring(
       Math.floor(length / 2) - Math.floor(newTextLength / 2) + newTextLength
     )}`;
   }
   return _separator;
 };
 
-export const scriptName = (value: string) => button('green', value, true);
+export const scriptName = (value: string) => button('blue', value, true);
 
 export const duration = (seconds: number | string) => {
   let color;
@@ -57,14 +75,6 @@ export const status = (status: string) => {
 
 export const argValue = (value: any) => {
   const color = 'yellow';
-  if (typeof value === 'string' && value.length > 20) {
-    return colors.bold[color](value);
-  }
-  return button(color, value);
-};
-
-export const resultValue = (value: any) => {
-  const color = 'blue';
   if (typeof value === 'string' && value.length > 20) {
     return colors.bold[color](value);
   }

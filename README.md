@@ -1,24 +1,26 @@
 # simplejob
 
-A tool class to wrap your jobs/scripts and easily get reports like 👇
+A tool class to wrap your jobs/scripts and easily get logs and reports like 👇
 
 ```
-+----------------------  JOB REPORT  ----------------------+
-👷  JOB  =>  myjob
-📁  PATH  => /Users/alex/Documents/myproject/myjob.js
-⚙️  STATUS  =>  warning
-⏰  DURATION  =>  5.128s
-👨‍💻  ENV  => prod
-💬  ARGS  =>
-	- startDate:  2023-01-12
-	- endDate:  2023-01-14
-📊  RESULTS  =>
-	- sentNotifications:  29
-🚨  ERRORS  =>
-  - Error on user 42
-  - Error on user 10
-  - Error on user 7
-+----------------------------------------------------------+
+[11:09:09] 🚀 Job started...
+[11:09:09] Error on user [42]
+[11:09:09] Error while fetching date
++------------------- Job report ---------------------+
+👷 Job =>  testJob
+📁 Path => /Users/alex/Documents/src/testJob.ts
+⚙️ Status =>  warning
+⏰ Duration =>  0.002s
+💬 Args =>
+        - startDate: "2021-10-10"
+        - endDate: "2023-10-10"
+📊 Results =>
+        - notificationSent: 42
+🚩 Errors =>
+        - Error on user [42]
+        - Error while fetching date
++------------------------------------------------------+
+[11:09:09] ✅ Job done.
 ```
 
 ## Installaton
@@ -50,6 +52,7 @@ class MyJob extends SimpleJob {
 ```ts
 const job = new MyJob({
   maintainer: "John Doe",
+  filename: __filename,
 });
 
 job.start(async () => {
@@ -92,8 +95,8 @@ will log
 
 ```sh
 > node myjob germany orleans
-invalid param: "country"
-usage: "node myjob [language] <city> <--confirm>"
+"coutry" is required
+Usage: "node myjob [language] <city> <--confirm>"
 ```
 
 > 💡 Note: for now, compatible Joi package is "17.4.0"

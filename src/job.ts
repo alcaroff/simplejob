@@ -2,6 +2,7 @@ import { fork, ChildProcess } from 'child_process';
 import _ from 'lodash';
 import minimist from 'minimist';
 import os from 'os';
+import colors from 'colors';
 
 import * as reportTheme from './reportTheme';
 import axios from 'axios';
@@ -69,7 +70,7 @@ class SimpleJob {
   };
 
   /** Max errors to show in report. */
-  reportErrorsLimit = 10;
+  reportErrorsLimit = 6;
 
   itemsOffset = 0;
   disableReport?: boolean;
@@ -252,7 +253,7 @@ class SimpleJob {
       message: text,
       data,
     };
-    console.error(`[${dayjs(error.date).format('mm:hh:ss')}] ${error.message}`);
+    console.error(`[${dayjs(error.date).format('hh:mm:ss')}] ${error.message}`);
     this.logs.push(error);
   };
   error = this.addError;
@@ -287,33 +288,33 @@ class SimpleJob {
     let report = '';
     // Regular report.
     report = `${reportTheme.separator(undefined, 'Job report')}\n`;
-    report += `👷 ${reportTheme.title('Job')} => ${reportTheme.scriptName(this.scriptName)}\n`;
-    report += `📁 ${reportTheme.title('Path')} => ${this.scriptPath}\n`;
-    report += `⚙️ ${reportTheme.title('Status')} => ${reportTheme.status(this.status)}\n`;
+    report += `👷 Job => ${reportTheme.scriptName(this.scriptName)}\n`;
+    report += `📁 Path => ${this.scriptPath}\n`;
+    report += `⚙️ Status => ${reportTheme.status(this.status)}\n`;
 
     const durationSeconds = (this.endedAtTimestamp! - +this.startedAtTimestamp!) / 1000;
-    report += `⏰ ${reportTheme.title('Duration')} => ${reportTheme.duration(durationSeconds)}\n`;
+    report += `⏰ Duration => ${reportTheme.duration(durationSeconds)}\n`;
 
     // Children.
     if (this.childrenCount > 0) {
-      report += `🤰 ${reportTheme.title('Children')} => ${this.childrenCount}\n`;
+      report += `🤰 Children => ${this.childrenCount}\n`;
     }
 
     // Args.
     const argsEntries = Object.entries(this.args).filter(([, value]) => value !== undefined);
     if (argsEntries.length) {
-      report += `💬 ${reportTheme.title('Args')} =>\n`;
+      report += `💬 Args =>\n`;
       report += argsEntries
-        .map(([key, value]) => `\t${key}: ${reportTheme.argValue(value)}`)
+        .map(([key, value]) => `\t- ${key}: ${reportTheme.value(value)}`)
         .join('\n');
       report += '\n';
     }
 
     // Results.
     if (Object.keys(this.result).length > 0) {
-      report += `📊 ${reportTheme.title('Results')} =>\n`;
+      report += `📊 Results =>\n`;
       report += Object.entries(this.result)
-        .map(([key, value]) => `\t${key}: ${reportTheme.resultValue(value)}`)
+        .map(([key, value]) => `\t- ${key}: ${reportTheme.value(value)}`)
         .join('\n');
       report += '\n';
     }
@@ -321,14 +322,14 @@ class SimpleJob {
     // Errors.
     const errors = this.getErrors();
     if (errors.length) {
-      report += `🚩 ${reportTheme.title('Errors')} =>\n`;
+      report += `🚩 Errors =>\n`;
       report += errors
         .slice(0, this.reportErrorsLimit)
         .sort()
-        .map((error) => `\t${reportTheme.error(error.message)}`)
+        .map((error) => `\t- ${colors.red(error.message)}`)
         .join('\n');
       if (this.logs.filter((x) => x.type === 'error').length - this.reportErrorsLimit > 0) {
-        report += `\n\t${reportTheme.error(
+        report += `\n\t${colors.red(
           `(...${
             this.logs.filter((x) => x.type === 'error').length - this.reportErrorsLimit
           } more errors)`
