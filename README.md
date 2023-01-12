@@ -6,6 +6,7 @@ A tool class to wrap your jobs/scripts and easily get logs and reports like 👇
 [11:09:09] 🚀 Job started...
 [11:09:09] Error on user [42]
 [11:09:09] Error while fetching date
+[11:09:09] ✅ Job done.
 +------------------- Job report ---------------------+
 👷 Job =>  testJob
 📁 Path => /Users/alex/Documents/src/testJob.ts
@@ -20,7 +21,6 @@ A tool class to wrap your jobs/scripts and easily get logs and reports like 👇
         - Error on user [42]
         - Error while fetching date
 +------------------------------------------------------+
-[11:09:09] ✅ Job done.
 ```
 
 ## Installaton

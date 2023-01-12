@@ -426,6 +426,8 @@ class SimpleJob {
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
       this.status = this.getErrors().length ? JobStatus.WARNING : JobStatus.SUCCESS;
 
+      this.log('✅ Job done.');
+      if (this.onDone) await this.onDone();
       if (!this.disableReport) {
         console.log(this.coloredReport);
       }
@@ -433,8 +435,6 @@ class SimpleJob {
       if (!this.disableConnect) {
         await this.disconnect();
       }
-      this.log('✅ Job done.');
-      if (this.onDone) await this.onDone();
 
       await this.simplelogsUpdate(true);
     } catch (error: any) {
