@@ -22,7 +22,9 @@ import {
 import dayjs from 'dayjs';
 
 class SimpleJob {
+  /** simplelogs report id */
   reportId?: string;
+
   maintainer?: string;
   description?: string;
   scriptName: string;
