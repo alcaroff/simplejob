@@ -1,6 +1,7 @@
 src
 .env
 .eslintrc
+.eslintrc.js
 .gitignore
 .nvmrc
 jest.config.js
