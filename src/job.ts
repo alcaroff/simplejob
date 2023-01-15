@@ -92,7 +92,6 @@ class SimpleJob {
     maintainer,
     description,
     fileName,
-    categories,
     confirmMessage,
     disableReport,
     disableConnect,
@@ -101,18 +100,15 @@ class SimpleJob {
     tags,
     thread,
   }: JobOptions) {
-    this.maintainer = maintainer;
-    this.description = description;
+    this.maintainer = maintainer || this.maintainer;
+    this.description = description || this.description;
     this.scriptName = fileName.split('/').reverse()[0].split('.')[0];
     this.scriptPath = fileName;
-    this.categories = categories;
-    this.disableReport = disableReport;
-    this.disableConnect = disableConnect;
-    if (confirmMessage) {
-      this.confirmMessage = confirmMessage;
-    }
-    this.onCrash = onCrash;
-    this.onDone = onDone;
+    this.disableReport = disableReport || this.disableReport;
+    this.disableConnect = disableConnect || this.disableConnect;
+    this.confirmMessage = confirmMessage || this.confirmMessage;
+    this.onCrash = onCrash || this.onCrash;
+    this.onDone = onDone || this.onDone;
     if (tags) {
       this.tags = [...this.tags, ...tags];
     }
