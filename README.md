@@ -95,8 +95,8 @@ will log
 
 ```sh
 > node myjob germany orleans
-"coutry" is required
-Usage: "node myjob [language] <city> <--confirm>"
+"country" is invalid
+Usage: "node myjob <country> [city] [--confirm]"
 ```
 
 > 💡 Note: for now, compatible Joi package is "17.4.0"
