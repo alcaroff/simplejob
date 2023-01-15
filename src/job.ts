@@ -82,7 +82,7 @@ class SimpleJob {
   private _interval?: NodeJS.Timer;
 
   // Functions.
-  onCrash?: () => Promise<any>;
+  onCrash?: (error: any) => Promise<any>;
   onDone?: () => Promise<any>;
 
   // Other.
@@ -452,7 +452,7 @@ class SimpleJob {
       this.log('💥 Job crashed.');
       await this.simplelogsUpdate(true);
       console.log(this.coloredReport);
-      if (this.onCrash) await this.onCrash();
+      if (this.onCrash) await this.onCrash(error);
       if (!this.disableConnect) {
         await this.disconnect();
       }
