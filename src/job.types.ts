@@ -36,6 +36,7 @@ export type ForkArgs = {
 };
 
 export type JobLog = {
+  id: string;
   date: string;
   message: string;
   type: 'error' | 'log';
@@ -63,6 +64,7 @@ export enum JobStatus {
   SUCCESS = 'success',
   WARNING = 'warning',
   CRASH = 'crash',
+  EXIT = 'exit',
 }
 
 export enum JobParentCode {

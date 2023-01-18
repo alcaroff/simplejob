@@ -6,6 +6,7 @@ import colors from 'colors';
 
 import * as reportTheme from './reportTheme';
 import axios from 'axios';
+import crypto from 'crypto';
 
 import {
   JobArgs,
@@ -44,6 +45,7 @@ class SimpleJob {
   // Data.
   result: JobResult = {};
   logs: JobLog[] = [];
+  private _alreadySentLogsIds: { [key: string]: true | undefined } = {};
 
   // Simplelogs.
   simplelogsToken?: string;
@@ -116,6 +118,38 @@ class SimpleJob {
     this.args = {};
   }
 
+  createId() {
+    return crypto.randomUUID();
+  }
+
+  /** Called when exit is unhandled, crash or manual exit */
+  unHandledExit(message: string, status: JobStatus = JobStatus.EXIT) {
+    if (message) {
+      this.addError(message);
+    }
+    this.status = status;
+    this.endedAt = dayjs().toString();
+    this.endedAtTimestamp = Date.now();
+    console.error(this.coloredReport);
+    process.exit(1);
+  }
+
+  /** On unhandled exit, print report anyway. */
+  loadExitLog() {
+    // CTRL+C
+    process.on('SIGINT', () => {
+      this.unHandledExit('CTRL+C exit triggered');
+    });
+    // Keyboard quit
+    process.on('SIGQUIT', () => {
+      this.unHandledExit('Keyboard quit triggered');
+    });
+    // `kill` command
+    process.on('SIGTERM', () => {
+      this.unHandledExit('Kill command triggered');
+    });
+  }
+
   getErrors(): JobLog[] {
     return this.logs.filter((log) => log.type === 'error') as JobLog[];
   }
@@ -154,13 +188,15 @@ class SimpleJob {
 
   async simplelogsUpdate(lastUpdate = false) {
     if (this.simplelogsToken && this.reportId) {
+      const logsToSend = this.logs.filter((log) => !this._alreadySentLogsIds[log.id]);
       try {
         await axios.patch(
           `${this.simplelogsUrl}/report/${this.reportId}`,
           {
             startedAt: this.startedAt,
+            endedAt: this.endedAt,
             report: this.report,
-            logs: this.logs,
+            logs: logsToSend,
             status: this.status,
           },
           {
@@ -169,6 +205,9 @@ class SimpleJob {
             },
           }
         );
+        logsToSend.forEach((log) => {
+          this._alreadySentLogsIds[log.id] = true;
+        });
       } catch (error: any) {
         this.addError(`simplelogs api update request failed`, error.response);
       }
@@ -250,6 +289,7 @@ class SimpleJob {
    */
   addError = (text: string, data?: any) => {
     const error: JobLog = {
+      id: this.createId(),
       type: 'error',
       date: new Date().toISOString(),
       message: text,
@@ -262,15 +302,15 @@ class SimpleJob {
 
   addLog = (text: string, data?: any) => {
     const log: JobLog = {
+      id: this.createId(),
       type: 'log',
       date: new Date().toISOString(),
       message: text,
       data,
     };
-    console.error(`[${dayjs(log.date).format(this.timeFormat)}] ${log.message}`);
+    console.log(`[${dayjs(log.date).format(this.timeFormat)}] ${log.message}`);
     this.logs.push(log);
   };
-  log = this.addLog;
 
   removeColors(string: string) {
     return string.replace(/\u001b\[[0-9]+m/g, '');
@@ -416,10 +456,11 @@ class SimpleJob {
       if (!this.disableConnect) {
         await this.connect();
       }
+      this.loadExitLog();
       this.startedAt = dayjs().toISOString();
       this.startedAtTimestamp = dayjs(this.startedAt).valueOf();
       this.status = JobStatus.RUNNING;
-      this.log('🚀 Job started...');
+      this.addLog('🚀 Job started...');
       await this.simplelogsStart();
 
       // Process job.
@@ -429,7 +470,7 @@ class SimpleJob {
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
       this.status = this.getErrors().length ? JobStatus.WARNING : JobStatus.SUCCESS;
 
-      this.log('✅ Job done.');
+      this.addLog('✅ Job done.');
       if (this.onDone) await this.onDone();
       if (!this.disableReport) {
         console.log(this.coloredReport);
@@ -441,11 +482,9 @@ class SimpleJob {
 
       await this.simplelogsUpdate(true);
     } catch (error: any) {
-      this.addError(error.stack);
-      this.endedAt = dayjs().toISOString();
-      this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
+      this.unHandledExit(error.stack, JobStatus.CRASH);
       this.status = JobStatus.CRASH;
-      this.log('💥 Job crashed.');
+      this.addLog('💥 Job crashed.');
       await this.simplelogsUpdate(true);
       console.log(this.coloredReport);
       if (this.onCrash) await this.onCrash(error);

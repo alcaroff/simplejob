@@ -10,8 +10,13 @@ job.getArgs({
   endDate: Joi.string().required(),
 });
 
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 job.start(async () => {
   job.addResult('notificationSent', 42);
   job.addError(`Error on user [42]`);
   job.addError(`Error while fetching date`);
+  await wait(2000);
+  job.addResult('notificationSent', 42);
+  await wait(10000);
+  job.addResult('notificationSent', 42);
 });
