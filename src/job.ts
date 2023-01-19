@@ -163,14 +163,14 @@ class SimpleJob {
             name: this.scriptName,
             path: this.scriptPath,
             args: this.args,
+            tags: this.tags,
+            thread: this.thread,
 
             env: this.env,
             status: this.status,
 
             startedAt: this.startedAt,
             logs: this.logs,
-            tags: this.tags,
-            thread: this.thread,
           },
           {
             headers: {
