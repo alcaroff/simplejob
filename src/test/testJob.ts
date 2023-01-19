@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import SimpleJob from './job';
+import SimpleJob from '../job';
 
 const job = new SimpleJob({
   fileName: __filename,
