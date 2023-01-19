@@ -6,7 +6,7 @@ import colors from 'colors';
 
 import * as reportTheme from './reportTheme';
 import axios from 'axios';
-import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 import {
   JobArgs,
@@ -119,7 +119,7 @@ class SimpleJob {
   }
 
   createId() {
-    return crypto.randomUUID();
+    return uuidv4();
   }
 
   /** Called when exit is unhandled, crash or manual exit */
