@@ -8,6 +8,7 @@ import * as reportTheme from './reportTheme';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import { parse as parseCsv } from 'json2csv';
 
 import {
   JobArgs,
@@ -156,13 +157,15 @@ class SimpleJob {
   }
 
   /** Export data in a file */
-  exportData(path: string, content: any, type = 'json') {
+  exportData(path: string, content: any, type: 'json' | 'csv' = 'json') {
     const dir = path.split('/').slice(0, -1).join('/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
     if (type === 'json') {
       fs.writeFileSync(path, JSON.stringify(content, null, 2));
+    } else if (type === 'csv') {
+      fs.writeFileSync(path, parseCsv(content));
     }
   }
 
