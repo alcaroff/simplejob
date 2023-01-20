@@ -7,6 +7,7 @@ import colors from 'colors';
 import * as reportTheme from './reportTheme';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import fs from 'fs';
 
 import {
   JobArgs,
@@ -152,6 +153,17 @@ class SimpleJob {
 
   getErrors(): JobLog[] {
     return this.logs.filter((log) => log.type === 'error') as JobLog[];
+  }
+
+  /** Export data in a file */
+  exportData(path: string, content: any, type = 'json') {
+    const dir = path.split('/').slice(0, -1).join('/');
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    if (type === 'json') {
+      fs.writeFileSync(path, JSON.stringify(content, null, 2));
+    }
   }
 
   async simplelogsStart() {
