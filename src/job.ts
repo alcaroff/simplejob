@@ -1,5 +1,5 @@
 import { fork, ChildProcess } from 'child_process';
-import _ from 'lodash';
+import merge from 'lodash/merge';
 import minimist from 'minimist';
 import os from 'os';
 import colors from 'colors';
@@ -612,7 +612,7 @@ class SimpleJob {
         detached: true, // Prepare child to run independently of its parent process
         childUnref: true, // Prevent the parent from waiting for a given subprocess to exit
       };
-      forkOptions = _.merge(defaultForkOptions, forkOptions);
+      forkOptions = merge(defaultForkOptions, forkOptions);
 
       const childProcess = fork(childPath, forkOptions.args || [], {
         detached: forkOptions.detached,
