@@ -19,5 +19,5 @@ job.start(async () => {
   job.addResult('notificationSent', 42);
   await wait(10000);
   job.addResult('notificationSent', 42);
-  job.exportData('data/test.json', 'Hello World');
+  job.exportCsv('data/test.json', [{ id: 42 }]);
 });

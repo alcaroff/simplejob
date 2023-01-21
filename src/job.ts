@@ -8,7 +8,7 @@ import * as reportTheme from './reportTheme';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-import { parse as parseCsv } from 'json2csv';
+import * as csv from 'fast-csv';
 
 import {
   JobArgs,
@@ -157,16 +157,30 @@ class SimpleJob {
   }
 
   /** Export data in a file */
-  exportData(path: string, content: any, type: 'json' | 'csv' = 'json') {
+  async exportCsv(path: string, data: any[]) {
+    if (data.length === 0) {
+      this.addError(`No data to export in ${path}`);
+    }
     const dir = path.split('/').slice(0, -1).join('/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
     }
-    if (type === 'json') {
-      fs.writeFileSync(path, JSON.stringify(content, null, 2));
-    } else if (type === 'csv') {
-      fs.writeFileSync(path, parseCsv(content));
-    }
+
+    return new Promise((resolve, reject) => {
+      const fileStream = fs.createWriteStream(path);
+      const csvStream = csv.format({ headers: true, writeHeaders: false });
+
+      csvStream
+        .pipe(fileStream)
+        .on('error', (error: any) => reject(error))
+        .on('end', () => resolve(undefined));
+
+      data.forEach((dataUnit: any) => {
+        console.log('write', dataUnit);
+        csvStream.write(dataUnit);
+      });
+      csvStream.end();
+    });
   }
 
   async simplelogsStart() {
@@ -226,9 +240,9 @@ class SimpleJob {
       } catch (error: any) {
         this.addError(`simplelogs api update request failed`, error.response);
       }
-    }
-    if (lastUpdate) {
-      clearInterval(this._interval);
+      if (lastUpdate) {
+        clearInterval(this._interval);
+      }
     }
   }
 
@@ -487,6 +501,7 @@ class SimpleJob {
 
       this.addLog('✅ Job done.');
       if (this.onDone) await this.onDone();
+
       if (!this.disableReport) {
         console.log(this.coloredReport);
       }
@@ -495,7 +510,11 @@ class SimpleJob {
         await this.disconnect();
       }
 
-      await this.simplelogsUpdate(true);
+      if (this.simplelogsToken) {
+        await this.simplelogsUpdate(true);
+      }
+
+      process.exit(0);
     } catch (error: any) {
       this.unHandledExit(error.stack, JobStatus.CRASH);
       this.status = JobStatus.CRASH;
