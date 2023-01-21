@@ -5,7 +5,6 @@ import os from 'os';
 import colors from 'colors';
 
 import * as reportTheme from './reportTheme';
-import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import * as csv from 'fast-csv';
@@ -186,9 +185,9 @@ class SimpleJob {
   async simplelogsStart() {
     if (this.simplelogsToken) {
       try {
-        const { data } = await axios.post(
-          `${this.simplelogsUrl}/report`,
-          {
+        const response = await fetch(`${this.simplelogsUrl}/report`, {
+          method: 'POST',
+          body: JSON.stringify({
             name: this.scriptName,
             path: this.scriptPath,
             args: this.args,
@@ -200,14 +199,13 @@ class SimpleJob {
 
             startedAt: this.startedAt,
             logs: this.logs,
+          }),
+          headers: {
+            Authorization: this.simplelogsToken,
           },
-          {
-            headers: {
-              Authorization: this.simplelogsToken,
-            },
-          }
-        );
-        this.reportId = data._id;
+        });
+        const report = await response.json();
+        this.reportId = report.id;
         this._interval = setInterval(async () => await this.simplelogsUpdate(), 2000);
       } catch (error: any) {
         this.addError(`simplelogs api start request failed`, error.response);
@@ -219,21 +217,12 @@ class SimpleJob {
     if (this.simplelogsToken && this.reportId) {
       const logsToSend = this.logs.filter((log) => !this._alreadySentLogsIds[log.id]);
       try {
-        await axios.patch(
-          `${this.simplelogsUrl}/report/${this.reportId}`,
-          {
-            startedAt: this.startedAt,
-            endedAt: this.endedAt,
-            report: this.report,
-            logs: logsToSend,
-            status: this.status,
+        await fetch(`${this.simplelogsUrl}/report/${this.reportId}`, {
+          method: 'PATCH',
+          headers: {
+            Authorization: this.simplelogsToken,
           },
-          {
-            headers: {
-              Authorization: this.simplelogsToken,
-            },
-          }
-        );
+        });
         logsToSend.forEach((log) => {
           this._alreadySentLogsIds[log.id] = true;
         });
