@@ -124,13 +124,14 @@ class SimpleJob {
   }
 
   /** Called when exit is unhandled, crash or manual exit */
-  unHandledExit(message: string, status: JobStatus = JobStatus.EXIT) {
+  async unHandledExit(message: string, status: JobStatus = JobStatus.EXIT) {
     if (message) {
       this.addError(message);
     }
     this.status = status;
     this.endedAt = dayjs().toString();
     this.endedAtTimestamp = Date.now();
+    await this.simplelogsUpdate(true);
     console.error(this.coloredReport);
     process.exit(1);
   }
@@ -138,16 +139,16 @@ class SimpleJob {
   /** On unhandled exit, print report anyway. */
   loadExitLog() {
     // CTRL+C
-    process.on('SIGINT', () => {
-      this.unHandledExit('CTRL+C exit triggered');
+    process.on('SIGINT', async () => {
+      await this.unHandledExit('CTRL+C exit triggered');
     });
     // Keyboard quit
-    process.on('SIGQUIT', () => {
-      this.unHandledExit('Keyboard quit triggered');
+    process.on('SIGQUIT', async () => {
+      await this.unHandledExit('Keyboard quit triggered');
     });
     // `kill` command
-    process.on('SIGTERM', () => {
-      this.unHandledExit('Kill command triggered');
+    process.on('SIGTERM', async () => {
+      await this.unHandledExit('Kill command triggered');
     });
   }
 
@@ -175,7 +176,6 @@ class SimpleJob {
         .on('end', () => resolve(undefined));
 
       data.forEach((dataUnit: any) => {
-        console.log('write', dataUnit);
         csvStream.write(dataUnit);
       });
       csvStream.end();
@@ -201,14 +201,16 @@ class SimpleJob {
             logs: this.logs,
           }),
           headers: {
+            'Content-Type': 'application/json',
             Authorization: this.simplelogsToken,
           },
         });
         const report = await response.json();
-        this.reportId = report.id;
+
+        this.reportId = report._id;
         this._interval = setInterval(async () => await this.simplelogsUpdate(), 2000);
       } catch (error: any) {
-        this.addError(`simplelogs api start request failed`, error.response);
+        this.addError(`Failed to send report (at start) to simplelogs api`, error.response);
       }
     }
   }
@@ -219,7 +221,15 @@ class SimpleJob {
       try {
         await fetch(`${this.simplelogsUrl}/report/${this.reportId}`, {
           method: 'PATCH',
+          body: JSON.stringify({
+            logs: logsToSend,
+            status: this.status,
+            endedAt: this.endedAt,
+            result: this.result,
+            report: this.report,
+          }),
           headers: {
+            'Content-Type': 'application/json',
             Authorization: this.simplelogsToken,
           },
         });
@@ -227,7 +237,7 @@ class SimpleJob {
           this._alreadySentLogsIds[log.id] = true;
         });
       } catch (error: any) {
-        this.addError(`simplelogs api update request failed`, error.response);
+        this.addError(`Failed to send report (at update) to simplelogs api`, error.response);
       }
       if (lastUpdate) {
         clearInterval(this._interval);
@@ -505,10 +515,9 @@ class SimpleJob {
 
       process.exit(0);
     } catch (error: any) {
-      this.unHandledExit(error.stack, JobStatus.CRASH);
+      await this.unHandledExit(error.stack, JobStatus.CRASH);
       this.status = JobStatus.CRASH;
       this.addLog('💥 Job crashed.');
-      await this.simplelogsUpdate(true);
       console.log(this.coloredReport);
       if (this.onCrash) await this.onCrash(error);
       if (!this.disableConnect) {
