@@ -101,6 +101,17 @@ Usage: "node myjob <country> [city] [--confirm]"
 
 > 💡 Note: for now, compatible Joi package is "17.4.0"
 
+### Exporting csv
+
+```ts
+await job.exportCsv(`${__dirname}/data/user_data.csv`, [
+  { id: 1, name: "John" },
+  { id: 2, name: "Jane" },
+]);
+```
+
+Will write a csv file using writeStream (create path if it doesn't exist).
+
 ## API
 
 🚧 Still in construction...
@@ -147,3 +158,7 @@ Options used with constructor call 👉 `const job = new SimpleJob(options)`
 | property | description                          | type     | required |
 | -------- | ------------------------------------ | -------- | -------- |
 | filename | Full path of the file (`__filename`) | `string` | [x]      |
+
+```
+
+```
