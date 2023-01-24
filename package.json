@@ -46,7 +46,6 @@
   },
   "dependencies": {
     "colors": "^1.4.0",
-    "crypto": "^1.0.1",
     "dayjs": "^1.11.7",
     "joi": "17.4.0",
     "lodash": "^4.17.21",
