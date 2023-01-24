@@ -7,7 +7,6 @@ import colors from 'colors';
 import * as reportTheme from './reportTheme';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
-import * as csv from 'fast-csv';
 
 import {
   JobArgs,
@@ -156,8 +155,8 @@ class SimpleJob {
     return this.logs.filter((log) => log.type === 'error') as JobLog[];
   }
 
-  /** Export data in a file */
-  async exportCsv(path: string, data: any[]) {
+  /** Export csv data in a file */
+  async exportCsv(path: string, data: { [key: string]: string | number }[]) {
     if (data.length === 0) {
       this.addError(`No data to export in ${path}`);
     }
@@ -167,18 +166,19 @@ class SimpleJob {
     }
 
     return new Promise((resolve, reject) => {
+      const headers = data[0] ? Object.keys(data[0]) : [];
       const fileStream = fs.createWriteStream(path);
-      const csvStream = csv.format({ headers: true, writeHeaders: false });
+      fileStream.on('error', (error: any) => reject(error)).on('close', () => resolve(undefined));
 
-      csvStream
-        .pipe(fileStream)
-        .on('error', (error: any) => reject(error))
-        .on('end', () => resolve(undefined));
-
-      data.forEach((dataUnit: any) => {
-        csvStream.write(dataUnit);
+      fileStream.write(headers.join(',') + '\n');
+      data.forEach((dataUnit) => {
+        const values = Object.values(dataUnit).map((value) =>
+          typeof value === 'string' && value.includes(',') ? `"${value}"` : value
+        );
+        const line = values.join(',') + '\n';
+        fileStream.write(line);
       });
-      csvStream.end();
+      fileStream.close();
     });
   }
 
@@ -397,7 +397,7 @@ class SimpleJob {
       report += errors
         .slice(0, this.reportErrorsLimit)
         .sort()
-        .map((error) => `\t- ${colors.red(error.message)}`)
+        .map((error) => `\t- ${colors.red(error.message.split('\n')[0])}`)
         .join('\n');
       if (this.logs.filter((x) => x.type === 'error').length - this.reportErrorsLimit > 0) {
         report += `\n\t${colors.red(
