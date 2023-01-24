@@ -112,9 +112,14 @@ await job.exportCsv(`${__dirname}/data/user_data.csv`, [
 
 Will write a csv file using writeStream (create path if it doesn't exist).
 
+## Incoming...
+
+_This package doc and Class is still in construction, some features are coming in next versions!_
+`fork children, getArgs without Joi, exportJson, saveReport, customizations...`
+
 ## API
 
-🚧 Still in construction...
+🚧 In construction...
 
 ### SimpleJob Class api
 
