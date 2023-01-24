@@ -159,7 +159,9 @@ class SimpleJob {
   async exportCsv(path: string, data: { [key: string]: string | number }[]) {
     if (data.length === 0) {
       this.addError(`No data to export in ${path}`);
+      return;
     }
+    // this.addLog(`📀 Exporting ${data.length} lines to ${path}...`);
     const dir = path.split('/').slice(0, -1).join('/');
     if (!fs.existsSync(dir)) {
       fs.mkdirSync(dir, { recursive: true });
@@ -168,7 +170,12 @@ class SimpleJob {
     return new Promise((resolve, reject) => {
       const headers = data[0] ? Object.keys(data[0]) : [];
       const fileStream = fs.createWriteStream(path);
-      fileStream.on('error', (error: any) => reject(error)).on('close', () => resolve(undefined));
+      fileStream
+        .on('error', (error: any) => reject(error))
+        .on('close', () => {
+          this.addLog(`📀 Exported ${data.length} lines to "${path}"`);
+          resolve(undefined);
+        });
 
       fileStream.write(headers.join(',') + '\n');
       data.forEach((dataUnit) => {
