@@ -45,7 +45,7 @@ export type JobLog = {
 
 export type JobOptions = {
   maintainer?: string;
-  fileName: string;
+  filename: string;
   childPath?: string;
   categories?: string[];
   disableReport?: boolean;

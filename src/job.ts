@@ -93,7 +93,7 @@ class SimpleJob {
   constructor({
     maintainer,
     description,
-    fileName,
+    filename,
     confirmMessage,
     disableReport,
     disableConnect,
@@ -104,8 +104,8 @@ class SimpleJob {
   }: JobOptions) {
     this.maintainer = maintainer || this.maintainer;
     this.description = description || this.description;
-    this.scriptName = fileName.split('/').reverse()[0].split('.')[0];
-    this.scriptPath = fileName;
+    this.scriptName = filename.split('/').reverse()[0].split('.')[0];
+    this.scriptPath = filename;
     this.disableReport = disableReport || this.disableReport;
     this.disableConnect = disableConnect || this.disableConnect;
     this.confirmMessage = confirmMessage || this.confirmMessage;

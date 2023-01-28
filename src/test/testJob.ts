@@ -7,7 +7,9 @@ class Job extends SimpleJob {
 }
 
 const job = new Job({
-  fileName: __filename,
+  filename: __filename,
+  tags: ['mpg', 'notification'],
+  thread: 'Notifications',
 });
 
 job.getArgs({
@@ -33,5 +35,5 @@ job.start(async () => {
     { id: 43, test: 'b' },
   ]);
 
-  throw new Error('Test error');
+  // throw new Error('Test error');
 });

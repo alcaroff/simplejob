@@ -68,7 +68,7 @@ export const status = (status: string) => {
   } else if (status === 'crash') {
     color = 'red';
   } else if (status === 'exit') {
-    color = 'yellow';
+    color = 'red';
   } else {
     color = 'gray';
   }
