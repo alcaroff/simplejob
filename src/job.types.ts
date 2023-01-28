@@ -55,8 +55,7 @@ export type JobOptions = {
   tags?: string[];
   thread?: string;
 
-  onCrash?: () => Promise<any>;
-  onDone?: () => Promise<any>;
+  onEnd?: (status: JobStatus, error?: any) => Promise<any>;
 };
 export enum JobStatus {
   PENDING = 'pending',

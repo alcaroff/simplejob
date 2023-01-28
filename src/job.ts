@@ -84,8 +84,7 @@ class SimpleJob {
   private _interval?: NodeJS.Timer;
 
   // Functions.
-  onCrash?: (error: any) => Promise<any>;
-  onDone?: () => Promise<any>;
+  onEnd?: (status: JobStatus, error?: any) => Promise<any>;
 
   // Other.
   timeFormat = 'hh:mm:ss';
@@ -97,8 +96,7 @@ class SimpleJob {
     confirmMessage,
     disableReport,
     disableConnect,
-    onDone,
-    onCrash,
+    onEnd,
     tags,
     thread,
   }: JobOptions) {
@@ -109,8 +107,7 @@ class SimpleJob {
     this.disableReport = disableReport || this.disableReport;
     this.disableConnect = disableConnect || this.disableConnect;
     this.confirmMessage = confirmMessage || this.confirmMessage;
-    this.onCrash = onCrash || this.onCrash;
-    this.onDone = onDone || this.onDone;
+    this.onEnd = onEnd || this.onEnd;
     if (tags) {
       this.tags = [...this.tags, ...tags];
     }
@@ -123,7 +120,7 @@ class SimpleJob {
   }
 
   /** Called when exit is unhandled, crash or manual exit */
-  async unHandledExit(message: string, status: JobStatus = JobStatus.EXIT) {
+  unHandledExit = async (message: string, status: JobStatus = JobStatus.EXIT) => {
     if (message) {
       this.addError(message);
     }
@@ -133,10 +130,10 @@ class SimpleJob {
     await this.simplelogsUpdate(true);
     console.error(this.coloredReport);
     process.exit(1);
-  }
+  };
 
   /** On unhandled exit, print report anyway. */
-  loadExitLog() {
+  loadExitLog = () => {
     // CTRL+C
     process.on('SIGINT', async () => {
       await this.unHandledExit('CTRL+C exit triggered');
@@ -149,14 +146,14 @@ class SimpleJob {
     process.on('SIGTERM', async () => {
       await this.unHandledExit('Kill command triggered');
     });
-  }
+  };
 
-  getErrors(): JobLog[] {
+  getErrors = (): JobLog[] => {
     return this.logs.filter((log) => log.type === 'error') as JobLog[];
-  }
+  };
 
   /** Export csv data in a file */
-  async exportCsv(path: string, data: { [key: string]: string | number }[]) {
+  exportCsv = (path: string, data: { [key: string]: string | number }[]) => {
     if (data.length === 0) {
       this.addError(`No data to export in ${path}`);
       return;
@@ -187,9 +184,9 @@ class SimpleJob {
       });
       fileStream.close();
     });
-  }
+  };
 
-  async simplelogsStart() {
+  simplelogsStart = async () => {
     if (this.simplelogsToken) {
       try {
         const response = await fetch(`${this.simplelogsUrl}/report`, {
@@ -220,9 +217,9 @@ class SimpleJob {
         this.addError(`Failed to send report (at start) to simplelogs api`, error.response);
       }
     }
-  }
+  };
 
-  async simplelogsUpdate(lastUpdate = false) {
+  simplelogsUpdate = async (lastUpdate = false) => {
     if (this.simplelogsToken && this.reportId) {
       const logsToSend = this.logs.filter((log) => !this._alreadySentLogsIds[log.id]);
       try {
@@ -250,15 +247,15 @@ class SimpleJob {
         clearInterval(this._interval);
       }
     }
-  }
+  };
 
-  async connect(): Promise<void> {
+  connect = async (): Promise<void> => {
     return;
-  }
+  };
 
-  async disconnect(): Promise<void> {
+  disconnect = async (): Promise<void> => {
     return;
-  }
+  };
 
   /**
    * Print usage of the job based on args and scriptName.
@@ -506,7 +503,7 @@ class SimpleJob {
       this.status = this.getErrors().length ? JobStatus.WARNING : JobStatus.SUCCESS;
 
       this.addLog('✅ Job done.');
-      if (this.onDone) await this.onDone();
+      if (this.onEnd) await this.onEnd(this.status);
 
       if (!this.disableReport) {
         console.log(this.coloredReport);
@@ -526,7 +523,7 @@ class SimpleJob {
       this.status = JobStatus.CRASH;
       this.addLog('💥 Job crashed.');
       console.log(this.coloredReport);
-      if (this.onCrash) await this.onCrash(error);
+      if (this.onEnd) await this.onEnd(this.status, error);
       if (!this.disableConnect) {
         await this.disconnect();
       }
