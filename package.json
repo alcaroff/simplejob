@@ -1,6 +1,6 @@
 {
   "name": "simplejob",
-  "version": "0.1.12",
+  "version": "0.2.0",
   "main": "lib/job.js",
   "types": "lib/job.d.ts",
   "author": "alcaroff",
