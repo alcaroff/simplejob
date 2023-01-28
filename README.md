@@ -35,13 +35,13 @@ npm i -S simplejob
 import SimpleJob from "simplejob";
 
 class MyJob extends SimpleJob {
-  async connect() {
+  connect = async () => {
     // your database connection
-  }
+  };
 
-  async disconnect() {
+  disconnect = async () => {
     // your database connection
-  }
+  };
 }
 ```
 
