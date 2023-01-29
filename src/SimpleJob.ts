@@ -7,6 +7,7 @@ import colors from 'colors';
 import * as reportTheme from './reportTheme';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
+import dayjs from 'dayjs';
 
 import {
   JobArgs,
@@ -19,10 +20,9 @@ import {
   ForkOptions,
   JobStatus,
   JobOptions,
-} from './job.types';
-import dayjs from 'dayjs';
+} from './types';
 
-class SimpleJob {
+export class SimpleJob {
   /** simplelogs report id */
   reportId?: string;
 
@@ -733,5 +733,3 @@ class SimpleJob {
     this.logs = [];
   };
 }
-
-export default SimpleJob;

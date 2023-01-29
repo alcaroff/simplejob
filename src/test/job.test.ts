@@ -1,4 +1,4 @@
-import SimpleJob from '../job';
+import { SimpleJob } from '../SimpleJob';
 
 describe('class Job', () => {
   it('should start job', () => {
