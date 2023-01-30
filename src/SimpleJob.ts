@@ -213,6 +213,9 @@ export class SimpleJob {
           }
         );
 
+        this.logs.forEach((log) => {
+          this._alreadySentLogsIds[log.id] = true;
+        });
         this.reportId = report._id;
         this._interval = setInterval(async () => await this.simplelogsUpdate(), 2000);
       } catch (error: any) {
