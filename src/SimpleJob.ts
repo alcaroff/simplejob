@@ -8,6 +8,7 @@ import * as reportTheme from './reportTheme';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 import {
   JobArgs,
@@ -189,9 +190,9 @@ export class SimpleJob {
   simplelogsStart = async () => {
     if (this.simplelogsToken) {
       try {
-        const response = await fetch(`${this.simplelogsUrl}/report`, {
-          method: 'POST',
-          body: JSON.stringify({
+        const { data: report } = await axios.post(
+          `${this.simplelogsUrl}/report`,
+          {
             name: this.scriptName,
             path: this.scriptPath,
             args: this.args,
@@ -203,18 +204,20 @@ export class SimpleJob {
 
             startedAt: this.startedAt,
             logs: this.logs,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: this.simplelogsToken,
           },
-        });
-        const report = await response.json();
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: this.simplelogsToken,
+            },
+          }
+        );
 
         this.reportId = report._id;
         this._interval = setInterval(async () => await this.simplelogsUpdate(), 2000);
       } catch (error: any) {
-        this.addError(`Failed to send report (at start) to simplelogs api`, error.response);
+        this.addError(`Failed to send report (at start) to simplelogs api`);
+        console.error(error);
       }
     }
   };
@@ -223,25 +226,28 @@ export class SimpleJob {
     if (this.simplelogsToken && this.reportId) {
       const logsToSend = this.logs.filter((log) => !this._alreadySentLogsIds[log.id]);
       try {
-        await fetch(`${this.simplelogsUrl}/report/${this.reportId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({
+        await axios.patch(
+          `${this.simplelogsUrl}/report/${this.reportId}`,
+          {
             logs: logsToSend,
             status: this.status,
             endedAt: this.endedAt,
             result: this.result,
             report: this.report,
-          }),
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: this.simplelogsToken,
           },
-        });
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: this.simplelogsToken,
+            },
+          }
+        );
         logsToSend.forEach((log) => {
           this._alreadySentLogsIds[log.id] = true;
         });
       } catch (error: any) {
         this.addError(`Failed to send report (at update) to simplelogs api`, error.response);
+        console.error(error);
       }
       if (lastUpdate) {
         clearInterval(this._interval);
