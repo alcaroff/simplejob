@@ -32,7 +32,7 @@ npm i -S simplejob
 ```
 
 ```ts
-import SimpleJob from "simplejob";
+import { SimpleJob, JobStatus } from "simplejob";
 
 class MyJob extends SimpleJob {
   connect = async () => {
@@ -41,6 +41,10 @@ class MyJob extends SimpleJob {
 
   disconnect = async () => {
     // your database connection
+  };
+
+  onDone = async (status: JobStatus, error: any) => {
+    // your custom actions
   };
 }
 ```
