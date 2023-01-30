@@ -237,6 +237,7 @@ export class SimpleJob {
             endedAt: this.endedAt,
             result: this.result,
             report: this.report,
+            args: this.args,
           },
           {
             headers: {
