@@ -43,7 +43,7 @@ class MyJob extends SimpleJob {
     // your database connection
   };
 
-  onDone = async (status: JobStatus, error: any) => {
+  onEnd = async (status: JobStatus, crashError?: any) => {
     // your custom actions
   };
 }
@@ -131,7 +131,7 @@ _This package doc and Class is still in construction, some features are coming i
 | ------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------ | ---------------------- |
 | connect            | Connect function called before job execution                       | `async () => void`                                                                                                       |                        |
 | disconnect         | Disconnect function called after the job execution                 | `async () => void`                                                                                                       |                        |
-| onEnd              | Function called after the job execution                            | `async (status: JobStatus, error?: any) => void`                                                                         |                        |
+| onEnd              | Function called after the job execution                            | `async (status: JobStatus, crashError?: any) => void`                                                                    |                        |
 | start              | Start                                                              | `async (async () => any) => void`                                                                                        |                        |
 | status             | Actual status of the job instance                                  | `'pending'` &#124; `'running'` &#124; `'warning'` &#124; `'success'` &#124; `'error'` &#124; `'exit'` &#124; `'pending'` |
 | timeformat         | Format of time to be displayed in logs                             | [dayjs format](https://day.js.org/docs/en/display/format)                                                                | `'hh:mm:ss'`           |
