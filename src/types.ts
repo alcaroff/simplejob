@@ -1,41 +1,18 @@
-import type { Schema } from 'joi';
+export type SimplejobArgs = any;
 
-export type JobArgs = any;
-
-export type JobArgsDetails = {
-  params: {
-    [key: string]: Schema;
-  };
-  namedParams: {
-    [key: string]: Schema;
-  };
+export type SimplejobArgSchema = {
+  name: string;
+  aliases?: `-${string}`[];
+  validate?: (value: any) => boolean | string | undefined;
+  default?: any;
+  optional?: boolean;
 };
 
-export type JobResult = {
+export type SimplejobResult = {
   [key: string]: any;
 };
 
-export type ForkOptions = {
-  args?: JobArgs;
-  detached?: boolean;
-  childUnref?: boolean;
-  childrenNumber?: number;
-};
-
-export type ForkArgs = {
-  jobPath?: string;
-  childPath: string;
-  forkOptions?: ForkOptions;
-  itemsToProcess: any[];
-  initData?: { [k: string]: any };
-  batchSize?: number;
-  onIteration?: { fn: (message: any) => any; everyNth?: number };
-  onFinished?: (message: any) => any;
-  onError?: (message: any) => any;
-  onChildReturn?: (data: any, message: any) => any;
-};
-
-export type JobLog = {
+export type SimplejobLog = {
   id: string;
   date: string;
   message: string;
@@ -43,9 +20,9 @@ export type JobLog = {
   data?: string;
 };
 
-export type JobOptions = {
+export type SimplejobOptions = {
   maintainer?: string;
-  filename: string;
+  __filename: string;
   childPath?: string;
   categories?: string[];
   disableReport?: boolean;
@@ -55,9 +32,9 @@ export type JobOptions = {
   tags?: string[];
   thread?: string;
 
-  onEnd?: (status: JobStatus, error?: any) => Promise<any>;
+  onEnd?: (status: SimplejobStatus, error?: any) => Promise<any>;
 };
-export enum JobStatus {
+export enum SimplejobStatus {
   PENDING = 'pending',
   RUNNING = 'running',
   SUCCESS = 'success',
@@ -65,19 +42,3 @@ export enum JobStatus {
   CRASH = 'crash',
   EXIT = 'exit',
 }
-
-export enum JobParentCode {
-  INIT = 'init',
-  EXIT = 'exit',
-  PROCESS = 'process',
-}
-
-export enum JobChildCode {
-  READY = 'ready',
-  ERROR = 'error',
-  DONE = 'done',
-  CUSTOM = 'custom',
-  FINISHED = 'finished',
-}
-
-export type JobCode = JobParentCode | JobChildCode;

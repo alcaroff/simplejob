@@ -34,6 +34,7 @@ export const separator = (length = 54, text?: string) => {
   _separator = `+${_separator}+`;
 
   if (text) {
+    text = `[ ${text} ]`;
     const newTextLength = text.length + 4;
     return `${_separator.substring(
       0,
@@ -49,9 +50,9 @@ export const scriptName = (value: string) => button('blue', value, true);
 
 export const duration = (seconds: number | string) => {
   let color;
-  if (seconds < 1) {
+  if (+seconds < 1) {
     color = gradient[0];
-  } else if (seconds < 5) {
+  } else if (+seconds < 5) {
     color = gradient[1];
   } else {
     color = gradient[2];

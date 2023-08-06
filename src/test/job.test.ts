@@ -1,9 +1,9 @@
-import { SimpleJob } from '../SimpleJob';
+import { Simplejob } from '../Simplejob';
 
 describe('class Job', () => {
   it('should start job', () => {
-    const job = new SimpleJob({
-      filename: __filename,
+    const job = new Simplejob({
+      __filename,
     });
     job.start(async () => {
       expect(true).toBe(true);

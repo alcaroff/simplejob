@@ -1,7 +1,4 @@
-import { fork, ChildProcess } from 'child_process';
-import merge from 'lodash/merge';
 import minimist from 'minimist';
-import os from 'os';
 import colors from 'colors';
 
 import * as reportTheme from './reportTheme';
@@ -11,19 +8,15 @@ import dayjs from 'dayjs';
 import axios from 'axios';
 
 import {
-  JobArgs,
-  JobResult,
-  JobArgsDetails,
-  JobChildCode,
-  JobParentCode,
-  JobLog,
-  ForkArgs,
-  ForkOptions,
-  JobStatus,
-  JobOptions,
+  SimplejobArgs,
+  SimplejobResult,
+  SimplejobLog,
+  SimplejobStatus,
+  SimplejobOptions,
+  SimplejobArgSchema,
 } from './types';
 
-export class SimpleJob {
+export class Simplejob {
   /** simplelogs report id */
   reportId?: string;
 
@@ -34,18 +27,15 @@ export class SimpleJob {
   env = process.env.NODE_ENV;
 
   categories?: string[];
-  args: JobArgs;
+  args: SimplejobArgs;
   parentId?: string;
-  status: JobStatus = JobStatus.PENDING;
+  status: SimplejobStatus = SimplejobStatus.PENDING;
 
-  /** Children */
-  children: { [pid: number]: ChildProcess } = {};
-  childrenCount = 0;
   confirmMessage = 'Type --confirm to perform more.';
 
   // Data.
-  result: JobResult = {};
-  logs: JobLog[] = [];
+  result: SimplejobResult = {};
+  logs: SimplejobLog[] = [];
   private _alreadySentLogsIds: { [key: string]: true | undefined } = {};
 
   // Simplelogs.
@@ -70,10 +60,7 @@ export class SimpleJob {
   thread?: string;
 
   /** Arguments of getArgs call stored for usage print. */
-  private _argsDetails: JobArgsDetails = {
-    params: {},
-    namedParams: {},
-  };
+  private _argSchemas: SimplejobArgSchema[] = [];
 
   /** Max errors to show in report. */
   reportErrorsLimit = 6;
@@ -85,7 +72,7 @@ export class SimpleJob {
   private _interval?: NodeJS.Timer;
 
   // Functions.
-  onEnd?: (status: JobStatus, error?: any) => Promise<any>;
+  onEnd?: (status: SimplejobStatus, error?: any) => Promise<any>;
 
   // Other.
   timeFormat = 'hh:mm:ss';
@@ -93,18 +80,18 @@ export class SimpleJob {
   constructor({
     maintainer,
     description,
-    filename,
+    __filename,
     confirmMessage,
     disableReport,
     disableConnect,
     onEnd,
     tags,
     thread,
-  }: JobOptions) {
+  }: SimplejobOptions) {
     this.maintainer = maintainer || this.maintainer;
     this.description = description || this.description;
-    this.scriptName = filename.split('/').reverse()[0].split('.')[0];
-    this.scriptPath = filename;
+    this.scriptName = __filename.split('/').reverse()[0].split('.')[0];
+    this.scriptPath = __filename;
     this.disableReport = disableReport || this.disableReport;
     this.disableConnect = disableConnect || this.disableConnect;
     this.confirmMessage = confirmMessage || this.confirmMessage;
@@ -121,7 +108,7 @@ export class SimpleJob {
   }
 
   /** Called when exit is unhandled, crash or manual exit */
-  unHandledExit = async (message: string, status: JobStatus = JobStatus.EXIT) => {
+  unHandledExit = async (message: string, status: SimplejobStatus = SimplejobStatus.EXIT) => {
     if (message) {
       this.addError(message);
     }
@@ -149,8 +136,8 @@ export class SimpleJob {
     });
   };
 
-  getErrors = (): JobLog[] => {
-    return this.logs.filter((log) => log.type === 'error') as JobLog[];
+  getErrors = (): SimplejobLog[] => {
+    return this.logs.filter((log) => log.type === 'error') as SimplejobLog[];
   };
 
   /** Export csv data in a file */
@@ -273,26 +260,26 @@ export class SimpleJob {
    */
   printUsage = (exit = true) => {
     let usage = `Usage: node ${this.scriptName}`;
-    if (Object.keys(this._argsDetails.params).length) {
-      Object.entries(this._argsDetails.params).forEach(([paramKey, schema]) => {
-        const required = schema._flags.presence === 'required';
-        if (required) {
-          usage += ` <${paramKey}>`;
-        } else {
-          usage += ` [${paramKey}]`;
-        }
+    const namedArgs = this._argSchemas.filter((schema) => schema.name.startsWith('--'));
+    const positionalArgs = this._argSchemas.filter((schema) => !schema.name.startsWith('--'));
+    positionalArgs.forEach((schema) => {
+      if (!schema.optional) {
+        usage += ` <${schema.name}>`;
+      } else {
+        usage += ` [${schema.name}]`;
+      }
+    });
+    namedArgs.forEach((schema) => {
+      let usageNames = schema.name;
+      schema.aliases?.forEach((alias) => {
+        usageNames += `|${alias}`;
       });
-    }
-    if (Object.keys(this._argsDetails.namedParams).length) {
-      Object.entries(this._argsDetails.namedParams).forEach(([paramKey, schema]) => {
-        const required = schema._flags.presence === 'required';
-        if (required) {
-          usage += ` <--${paramKey}>`;
-        } else {
-          usage += ` [--${paramKey}]`;
-        }
-      });
-    }
+      if (!schema.optional) {
+        usage += ` <${usageNames}>`;
+      } else {
+        usage += ` [${usageNames}]`;
+      }
+    });
     console.info(usage);
     if (exit) {
       process.exit(1);
@@ -330,20 +317,20 @@ export class SimpleJob {
    * @param data the data linked to the error.
    */
   addError = (text: string, data?: any) => {
-    const error: JobLog = {
+    const error: SimplejobLog = {
       id: this.createId(),
       type: 'error',
       date: new Date().toISOString(),
       message: text,
       data,
     };
-    console.error(`[${dayjs(error.date).format(this.timeFormat)}] ${error.message}`);
+    console.error(colors.red(`[${dayjs(error.date).format(this.timeFormat)}] ${error.message}`));
     this.logs.push(error);
   };
   error = this.addError;
 
   addLog = (text: string, data?: any) => {
-    const log: JobLog = {
+    const log: SimplejobLog = {
       id: this.createId(),
       type: 'log',
       date: new Date().toISOString(),
@@ -371,7 +358,7 @@ export class SimpleJob {
   private _generateColoredReport = () => {
     let report = '';
     // Regular report.
-    report = `${reportTheme.separator(undefined, 'Job report')}\n`;
+    report = `${reportTheme.separator(undefined, 'Report')}\n`;
     report += `👷 Job > ${reportTheme.scriptName(this.scriptName)}\n`;
     report += `📁 Path > ${this.scriptPath}\n`;
     if (this.env) report += `💻 Env > ${this.env}\n`;
@@ -380,10 +367,10 @@ export class SimpleJob {
     const durationSeconds = (this.endedAtTimestamp! - +this.startedAtTimestamp!) / 1000;
     report += `⏰ Duration > ${reportTheme.duration(durationSeconds)}\n`;
 
-    // Children.
-    if (this.childrenCount > 0) {
-      report += `🤰 Children > ${this.childrenCount}\n`;
-    }
+    // // Children.
+    // if (this.childrenCount > 0) {
+    //   report += `🤰 Children > ${this.childrenCount}\n`;
+    // }
 
     // Args.
     const argsEntries = Object.entries(this.args).filter(([, value]) => value !== undefined);
@@ -424,10 +411,6 @@ export class SimpleJob {
     }
 
     report += reportTheme.separator();
-    // Handle confirm param.
-    if (this._argsDetails.namedParams.confirm && !this.args.confirm) {
-      report += reportTheme.confirmMessage(this.confirmMessage);
-    }
 
     return report;
   };
@@ -440,50 +423,58 @@ export class SimpleJob {
   /**
    * Get args from argv, check schemas and set args to the job instance.
    * Used for the report and the usage.
-   * @param params an object { paramKey: joiSchema }
-   * @param namedParams an object { paramKey: joiSchema }
+   * @param params an object { paramKey: simplejobArgSchema }
+   * @param namedParams an object { paramKey: simplejobArgSchema }
    * @returns object of all params { key: value }
    */
-  getArgs = <T = any>(
-    params: JobArgsDetails['params'] = {},
-    namedParams: JobArgsDetails['namedParams'] = {}
-  ): T => {
+  getArgs = <T = any>(argSchemas: SimplejobArgSchema[]): T => {
     // TODO `params` doit etre un tableau pour etre sur de respecter l'ordre
     const argv = minimist(process.argv.slice(2));
-    this._argsDetails = {
-      params,
-      namedParams,
-    };
-    const args: JobArgs = {};
-    Object.entries(params).forEach(([paramKey, schema], i) => {
-      args[paramKey] = argv._[i];
-      // Set default.
-      if (!args[paramKey] && schema._flags.default) {
-        args[paramKey] = schema._flags.default;
+    this._argSchemas = argSchemas;
+    const args: SimplejobArgs = {};
+    let unnamedArgIndex = 0;
+    argSchemas.forEach((schema) => {
+      let key = schema.name;
+
+      // Handle named params.
+      if (schema.name.startsWith('--')) {
+        key = schema.name.split('--')[1];
       }
-      const validationResult = schema.validate(args[paramKey]);
-      if (validationResult.error) {
-        console.error(
-          validationResult.error.details[0].message.replace('"value"', `"${paramKey}"`)
-        );
+
+      // Get value.
+      let value = schema.name.startsWith('--') ? argv[key] : argv[++unnamedArgIndex];
+
+      // Handle aliases.
+      if (!value && schema.aliases && schema.aliases.length > 0) {
+        schema.aliases.forEach((alias) => {
+          const aliasKey = alias.split('-')[1];
+          if (argv[aliasKey]) {
+            value = argv[aliasKey];
+          }
+        });
+      }
+
+      // Set default.
+      if (!value && schema.default) {
+        value = schema.default;
+      }
+
+      // Handle required.
+      if (!schema.optional && !value) {
+        this.addError(`"${key}" is required`);
         this.printUsage();
       }
-      args[paramKey] = validationResult.value;
-    });
-    Object.entries(namedParams).forEach(([paramKey, schema]) => {
-      args[paramKey] = argv[paramKey];
-      // Set default.
-      if (!args[paramKey] && schema._flags.default) {
-        args[paramKey] = schema._flags.default;
-      }
-      const validationResult = schema.validate(args[paramKey]);
-      if (validationResult.error) {
-        console.error(
-          validationResult.error.details[0].message.replace('"value"', `"${paramKey}"`)
-        );
+
+      // Handle validation.
+      const validationResult = schema.validate?.(value);
+      if (validationResult === false || typeof validationResult === 'string') {
+        if (typeof validationResult === 'string')
+          this.addError(`"${key}" is invalid: ${validationResult}`);
+        else this.addError(`"${key}" is invalid`);
         this.printUsage();
       }
-      args[paramKey] = validationResult.value;
+
+      if (value) args[key] = value;
     });
     Object.assign(this.args, args);
     return this.args;
@@ -501,7 +492,8 @@ export class SimpleJob {
       this.loadExitLog();
       this.startedAt = dayjs().toISOString();
       this.startedAtTimestamp = dayjs(this.startedAt).valueOf();
-      this.status = JobStatus.RUNNING;
+      this.status = SimplejobStatus.RUNNING;
+      console.log(`${reportTheme.separator(undefined, 'Logs')}`);
       this.addLog('🚀 Job started...');
       await this.simplelogsStart();
 
@@ -510,7 +502,7 @@ export class SimpleJob {
 
       this.endedAt = dayjs().toISOString();
       this.endedAtTimestamp = dayjs(this.endedAt).valueOf();
-      this.status = this.getErrors().length ? JobStatus.WARNING : JobStatus.SUCCESS;
+      this.status = this.getErrors().length ? SimplejobStatus.WARNING : SimplejobStatus.SUCCESS;
 
       this.addLog('✅ Job done.');
       if (this.onEnd) await this.onEnd(this.status);
@@ -529,8 +521,8 @@ export class SimpleJob {
 
       process.exit(0);
     } catch (error: any) {
-      await this.unHandledExit(error.stack, JobStatus.CRASH);
-      this.status = JobStatus.CRASH;
+      await this.unHandledExit(error.stack, SimplejobStatus.CRASH);
+      this.status = SimplejobStatus.CRASH;
       this.addLog('💥 Job crashed.');
       console.log(this.coloredReport);
       if (this.onEnd) await this.onEnd(this.status, error);
@@ -541,173 +533,13 @@ export class SimpleJob {
     }
   };
 
-  startChild = (processChildJob: (initData: any, itemToProcess: any) => any) =>
-    this.start(
-      () =>
-        new Promise((resolve) => {
-          try {
-            this.initChildMessageHandler(processChildJob, resolve);
-            (process as any).send({ code: JobChildCode.READY });
-          } catch (error: any) {
-            (process as any).send({ code: JobChildCode.ERROR, error: error.toString() });
-          }
-        })
-    );
-
   exit = async (exitCode: any) => {
     await this.disconnect();
     process.exit(exitCode);
   };
 
-  initChildMessageHandler = (
-    processChildJob: (initData: any, itemToProcess: any) => any,
-    resolve: (value: unknown) => any
-  ) => {
-    let initData: any = {};
-
-    process.on(
-      'message',
-      async (message: { code: JobParentCode; initData?: any; itemsToProcess?: any[] }) => {
-        this.resetStatsObject();
-
-        try {
-          switch (message.code) {
-            case JobParentCode.INIT:
-              initData = message.initData || {};
-              break;
-            case JobParentCode.PROCESS: {
-              const { itemsToProcess } = message;
-              if (!itemsToProcess || !itemsToProcess.length) {
-                await (process as any).send({ code: JobChildCode.FINISHED });
-                resolve(undefined);
-                return this.exit(0);
-              }
-
-              const data: any = await processChildJob(initData, itemsToProcess);
-              (process as any).send({
-                code: JobChildCode.DONE,
-                ...this.createStatsObject(),
-                data,
-              });
-              break;
-            }
-            case JobParentCode.EXIT:
-              resolve(undefined);
-              await this.exit(0);
-              break;
-            default:
-              break;
-          }
-        } catch (error: any) {
-          console.error(error);
-          this.addError(`[${__filename}] Error`, error);
-          (process as any).send({ code: JobChildCode.ERROR, ...this.createStatsObject() });
-        }
-      }
-    );
-  };
-
-  forkOneChild = ({
-    childPath,
-    forkOptions = {},
-    itemsToProcess,
-    initData = {},
-    batchSize = 1,
-    onError,
-    onFinished,
-    onIteration,
-    onChildReturn,
-  }: ForkArgs) =>
-    new Promise((resolve, reject) => {
-      const defaultForkOptions: ForkOptions = {
-        args: [],
-        detached: true, // Prepare child to run independently of its parent process
-        childUnref: true, // Prevent the parent from waiting for a given subprocess to exit
-      };
-      forkOptions = merge(defaultForkOptions, forkOptions);
-
-      const childProcess = fork(childPath, forkOptions.args || [], {
-        detached: forkOptions.detached,
-      });
-      this.children[childProcess.pid!] = childProcess;
-      this.childrenCount += 1;
-
-      if (forkOptions.childUnref) {
-        childProcess.unref();
-      }
-
-      childProcess.on(
-        'message',
-        async (message: { code: JobChildCode; result: JobResult; logs: JobLog[]; data: any }) => {
-          if (message.code === JobChildCode.READY) {
-            childProcess.send({
-              code: JobParentCode.INIT,
-              initData,
-            });
-          }
-
-          if (message.code === JobChildCode.ERROR) {
-            if (onError) {
-              await onError(message);
-            }
-          }
-
-          if ([JobChildCode.READY, JobChildCode.DONE, JobChildCode.ERROR].includes(message.code)) {
-            this.addStatsFromChild(message);
-
-            if (onIteration?.fn) {
-              if (this.itemsOffset % (onIteration.everyNth || 1) === 0) {
-                await onIteration.fn(message);
-              }
-            }
-
-            const items = itemsToProcess.slice(this.itemsOffset, this.itemsOffset + batchSize!);
-            childProcess.send({ code: JobParentCode.PROCESS, itemsToProcess: items });
-            this.itemsOffset += items.length;
-          }
-
-          if (message.code === JobChildCode.DONE) {
-            if (onChildReturn) {
-              onChildReturn(message.data, message);
-            }
-          }
-
-          if (message.code === JobChildCode.FINISHED) {
-            delete this.children[childProcess.pid!];
-            if (Object.keys(this.children).length === 0) {
-              if (onFinished) {
-                await onFinished(message);
-              }
-              resolve(undefined);
-            }
-          }
-        }
-      );
-
-      childProcess.on('error', (error: any) => {
-        return reject(error);
-      });
-
-      childProcess.on('exit', (code: number) => {
-        if (code) {
-          return reject(code);
-        }
-        return resolve(undefined);
-      });
-    });
-
-  forkChildren = async ({ forkOptions = {}, itemsToProcess, ...rest }: ForkArgs) => {
-    const childrenNumber =
-      forkOptions.childrenNumber || Math.min(os.cpus().length, itemsToProcess.length);
-    return Promise.all(
-      Array(childrenNumber)
-        .fill(0)
-        .map(() => this.forkOneChild({ forkOptions, itemsToProcess, ...rest }))
-    );
-  };
-
   /** Merges 2 results */
-  mergeResult = (result: JobResult, newResult: JobResult) => {
+  mergeResult = (result: SimplejobResult, newResult: SimplejobResult) => {
     Object.keys(newResult).forEach((key) => {
       if (!result[key]) {
         result[key] = newResult[key];
@@ -724,7 +556,7 @@ export class SimpleJob {
     return result;
   };
 
-  addStatsFromChild = ({ result, logs }: { result: JobResult; logs: JobLog[] }) => {
+  addStatsFromChild = ({ result, logs }: { result: SimplejobResult; logs: SimplejobLog[] }) => {
     if (result) {
       this.mergeResult(this.result, result);
     }
